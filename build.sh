@@ -15,8 +15,8 @@ function build(){
     rm -rf "$dest" "$dist" "$build"
 
     pip install --ignore-installed --build $build "$package"
-    version=$(grep __version__ $build/protobuf/google/protobuf/__init__.py \
-              | awk -F "'" '{print $2}')
+    version=$(find "$build/protobuf/" -name METADATA -exec grep '^Version:' {} \; \
+              | awk '{print $2}')
 
     find $build \( \
         -iname '*.egg' \
@@ -38,7 +38,7 @@ function build(){
     add LICENSE
 
     # Add the version
-    perl -pi -e "s/VERSION/$VERSION/" $dist/addon.xml
+    perl -pi -e "s/VERSION/$version/" $dist/addon.xml
     # Set the addon ID
     perl -pi -e "s/ID/$addon/" $dist/addon.xml
 
