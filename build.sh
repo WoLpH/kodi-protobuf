@@ -1,44 +1,54 @@
 #!/bin/sh
 
-BUILD=build
-ADDON=$(grep 'id=' addon.xml | perl -p -e 's/.*id="([^"]+)"/\1/')
-DIST=dist/$ADDON
-DEST=$ADDON-$VERSION.zip
+function build(){
+    old_pwd="$PWD"
+    addon="$1"
+    package="$2"
+    build=build/$addon
+    dist=dist/$addon
+    dest=$addon-$VERSION.zip
 
-rm -f $DEST
-rm -rf $DIST
-rm -rf $BUILD
+    function add(){
+        cp -v "$@" $dist/
+    }
 
-function add(){
-    cp -v "$@" $DIST/
+    rm -rf "$dest" "$dist" "$build"
+
+    pip install --ignore-installed --build $build "$package"
+    version=$(grep __version__ $build/protobuf/google/protobuf/__init__.py \
+              | awk -F "'" '{print $2}')
+
+    find $build \( \
+        -iname '*.egg' \
+        -or -iname '*.pyc' \
+        -or -iname '*.pyo' \
+        -or -iname '*.pth' \
+        -or -iname '*.txt' \
+        -or -iname '__pycache__' \
+        -or -iname '*.egg-info' \
+        -or -iname '*.$dist-info' \
+    \) -print0 | xargs -0 rm -rf
+
+    mkdir -p $dist/protobuf
+    rsync -av $build/protobuf/google/ $dist/protobuf/google/
+
+    add addon.xml
+    add icon.png
+    add README.rst
+    add LICENSE
+
+    # Add the version
+    perl -pi -e "s/VERSION/$VERSION/" $dist/addon.xml
+    # Set the addon ID
+    perl -pi -e "s/ID/$addon/" $dist/addon.xml
+
+    cd $dist/..
+    zip -r ../$dest $addon
+    rm -rf $build
+
+    cd "$old_pwd"
 }
 
-pip install --ignore-installed --$BUILD $BUILD protobuf
-VERSION=$(grep __version__ $BUILD/protobuf/google/protobuf/__init__.py \
-          | awk -F "'" '{print $2}')
-
-find $BUILD \( \
-    -iname '*.egg' \
-    -or -iname '*.pyc' \
-    -or -iname '*.pyo' \
-    -or -iname '*.pth' \
-    -or -iname '*.txt' \
-    -or -iname '__pycache__' \
-    -or -iname '*.egg-info' \
-    -or -iname '*.$DIST-info' \
-\) -print0 | xargs -0 rm -rf
-
-mkdir -p $DIST/protobuf
-rsync -av $BUILD/protobuf/google/ $DIST/protobuf/google/
-
-add addon.xml
-add icon.png
-add README.rst
-add LICENSE
-
-perl -pi -e "s/VERSION/$VERSION/" $DIST/addon.xml
-
-cd $DIST/..
-zip -r ../$DEST $ADDON
-rm -rf $BUILD
+build script.module.protobuf 'protobuf<3'
+build script.module.protobuf3 'protobuf<4'
 
