@@ -2,8 +2,9 @@
 
 function build(){
     old_pwd="$PWD"
-    addon="$1"
+    name="$1"
     package="$2"
+    addon="script.module.$name"
     build=build/$addon
     dist=dist/$addon
     dest=$addon-$VERSION.zip
@@ -29,8 +30,8 @@ function build(){
         -or -iname '*.$dist-info' \
     \) -print0 | xargs -0 rm -rf
 
-    mkdir -p $dist/protobuf
-    rsync -av $build/protobuf/google/ $dist/protobuf/google/
+    mkdir -p $dist/$name
+    rsync -av $build/protobuf/google/ $dist/$name/google/
 
     add addon.xml
     add icon.png
@@ -41,6 +42,8 @@ function build(){
     perl -pi -e "s/VERSION/$version/" $dist/addon.xml
     # Set the addon ID
     perl -pi -e "s/ID/$addon/" $dist/addon.xml
+    # Update the name
+    perl -pi -e "s/NAME/$name/" $dist/addon.xml
 
     cd $dist/..
     zip -r ../$dest $addon
@@ -49,6 +52,6 @@ function build(){
     cd "$old_pwd"
 }
 
-build script.module.protobuf 'protobuf<3'
-build script.module.protobuf3 'protobuf<4'
+build protobuf 'protobuf<3'
+build protobuf3 'protobuf<4'
 
