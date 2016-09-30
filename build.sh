@@ -7,17 +7,19 @@ function build(){
     addon="script.module.$name"
     build=build/$addon
     dist=dist/$addon
-    dest=$addon.zip
 
     function add(){
         cp -v "$@" $dist/
     }
 
-    rm -rf "$dest" "$dist" "$build"
+    rm -rf "$dist" "$build"
 
     pip install --ignore-installed --build $build "$package"
     version=$(find "$build/protobuf/" -name METADATA -exec grep '^Version:' {} \; \
               | awk '{print $2}')
+
+    dest=$addon-$version.zip
+    rm -rf "$dest"
 
     find $build \( \
         -iname '*.egg' \
