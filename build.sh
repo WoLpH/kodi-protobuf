@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 function build(){
     old_pwd="$PWD"
@@ -7,7 +7,7 @@ function build(){
     addon="script.module.$name"
     build=build/$addon
     dist=dist/$addon
-    dest=$addon-$VERSION.zip
+    dest=$addon.zip
 
     function add(){
         cp -v "$@" $dist/
@@ -31,6 +31,7 @@ function build(){
     \) -print0 | xargs -0 rm -rf
 
     mkdir -p $dist/$name
+    touch $build/protobuf/google/__init__.py
     rsync -av $build/protobuf/google/ $dist/$name/google/
 
     add addon.xml
@@ -44,6 +45,14 @@ function build(){
     perl -pi -e "s/ID/$addon/" $dist/addon.xml
     # Update the name
     perl -pi -e "s/NAME/$name/" $dist/addon.xml
+    # Update the requirements
+
+    if [ "$name" = "protobuf3" ]; then
+        requires='<import addon="script.module.six" version="1.9.0" \/>'
+    else
+        requires=''
+    fi
+    perl -pi -e "s/REQUIRES/$requires/" $dist/addon.xml
 
     cd $dist/..
     zip -r ../$dest $addon
